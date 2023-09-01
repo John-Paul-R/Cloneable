@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Cloneable.Attributes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -12,65 +13,13 @@ namespace Cloneable;
 [Generator]
 public class CloneableGenerator : ISourceGenerator
 {
-    private const string PreventDeepCopyKeyString = "PreventDeepCopy";
-    private const string ExplicitDeclarationKeyString = "ExplicitDeclaration";
+    private const string PreventDeepCopyKeyString = nameof(CloneAttribute.PreventDeepCopy);
+    private const string ExplicitDeclarationKeyString = nameof(CloneableAttribute.ExplicitDeclaration);
 
-    private const string CloneableNamespace = "Cloneable";
-    private const string CloneableAttributeString = "CloneableAttribute";
-    private const string CloneAttributeString = "CloneAttribute";
-    private const string IgnoreCloneAttributeString = "IgnoreCloneAttribute";
-
-    private const string cloneableAttributeText = $$"""
-using System;
-
-namespace {{CloneableNamespace}}
-{
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
-    public sealed class {{CloneableAttributeString}} : Attribute
-    {
-        public {{CloneableAttributeString}}()
-        {
-        }
-
-        public bool {{ExplicitDeclarationKeyString}} { get; set; }
-    }
-}
-
-""";
-
-    private const string clonePropertyAttributeText = $$"""
-using System;
-
-namespace {{CloneableNamespace}}
-{
-    [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
-    public sealed class {{CloneAttributeString}} : Attribute
-    {
-        public {{CloneAttributeString}}()
-        {
-        }
-
-        public bool {{PreventDeepCopyKeyString}} { get; set; }
-    }
-}
-
-""";
-
-    private const string ignoreClonePropertyAttributeText = $$"""
-using System;
-
-namespace {{CloneableNamespace}}
-{
-  [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
-  public sealed class {{IgnoreCloneAttributeString}} : Attribute
-  {
-      public {{IgnoreCloneAttributeString}}()
-      {
-      }
-  }
-}
-
-""";
+    private const string CloneableNamespace = "Cloneable.Attributes";
+    private const string CloneableAttributeString = nameof(CloneableAttribute);
+    private const string CloneAttributeString = nameof(CloneAttribute);
+    private const string IgnoreCloneAttributeString = nameof(IgnoreCloneAttribute);
 
     //TODO: Add CustomCloneAttribute?
     private INamedTypeSymbol? cloneableAttribute;
@@ -84,7 +33,6 @@ namespace {{CloneableNamespace}}
 
     public void Execute(GeneratorExecutionContext context)
     {
-        InjectCloneableAttributes(context);
         GenerateCloneMethods(context);
     }
 
@@ -93,7 +41,7 @@ namespace {{CloneableNamespace}}
         if (context.SyntaxReceiver is not SyntaxReceiver receiver)
             return;
 
-        Compilation compilation = GetCompilation(context);
+        var compilation = context.Compilation;
 
         InitAttributes(compilation);
 
@@ -112,19 +60,9 @@ namespace {{CloneableNamespace}}
 
     private void InitAttributes(Compilation compilation)
     {
-        cloneableAttribute = compilation.GetTypeByMetadataName($"{CloneableNamespace}.{CloneableAttributeString}")!;
-        cloneAttribute = compilation.GetTypeByMetadataName($"{CloneableNamespace}.{CloneAttributeString}")!;
-        ignoreCloneAttribute = compilation.GetTypeByMetadataName($"{CloneableNamespace}.{IgnoreCloneAttributeString}")!;
-    }
-
-    private static Compilation GetCompilation(GeneratorExecutionContext context)
-    {
-        var options = context.Compilation.SyntaxTrees.First().Options as CSharpParseOptions;
-
-        var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(cloneableAttributeText, Encoding.UTF8), options)).
-            AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(clonePropertyAttributeText, Encoding.UTF8), options)).
-            AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(ignoreClonePropertyAttributeText, Encoding.UTF8), options));
-        return compilation;
+        cloneableAttribute ??= compilation.GetTypeByMetadataName($"{CloneableNamespace}.{CloneableAttributeString}")!;
+        cloneAttribute ??= compilation.GetTypeByMetadataName($"{CloneableNamespace}.{CloneAttributeString}")!;
+        ignoreCloneAttribute ??= compilation.GetTypeByMetadataName($"{CloneableNamespace}.{IgnoreCloneAttributeString}")!;
     }
 
     private string CreateCloneableCode(INamedTypeSymbol classSymbol, bool isExplicit)
@@ -352,12 +290,5 @@ namespace {{CloneableNamespace}}
         var model = compilation.GetSemanticModel(@class.SyntaxTree);
         var classSymbol = model.GetDeclaredSymbol(@class)!;
         return classSymbol;
-    }
-
-    private static void InjectCloneableAttributes(GeneratorExecutionContext context)
-    {
-        context.AddSource(CloneableAttributeString, SourceText.From(cloneableAttributeText, Encoding.UTF8));
-        context.AddSource(CloneAttributeString, SourceText.From(clonePropertyAttributeText, Encoding.UTF8));
-        context.AddSource(IgnoreCloneAttributeString, SourceText.From(ignoreClonePropertyAttributeText, Encoding.UTF8));
     }
 }

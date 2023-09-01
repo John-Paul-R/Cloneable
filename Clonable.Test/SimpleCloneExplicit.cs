@@ -1,4 +1,4 @@
-able.Sample;
+namespace Cloneable.Sample;
 
 [Cloneable(ExplicitDeclaration = true)]
 public partial class SimpleCloneExplicit

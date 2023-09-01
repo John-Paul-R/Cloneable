@@ -1,4 +1,5 @@
 using System;
+using Cloneable.Attributes;
 
 namespace Cloneable.Sample;
 

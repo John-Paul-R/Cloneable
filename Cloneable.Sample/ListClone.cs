@@ -6,7 +6,7 @@ using Cloneable.Attributes;
 
 namespace Cloneable.Sample;
 
-[Cloneable]
+[Cloneable(NullableReferenceHandling = NullableReferenceHandling.AllowAlways)]
 public partial class ListClone
 {
     public string A { get; set; }

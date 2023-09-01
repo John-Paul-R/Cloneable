@@ -5,7 +5,7 @@ public partial class ArrayClone
 {
     public string A { get; set; }
         
-    public int[] B { get; set; }
+    public int[]? B { get; set; }
 
     public override string ToString()
     {

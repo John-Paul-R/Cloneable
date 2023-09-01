@@ -282,7 +282,7 @@ public class Tests
     }
 
     [Fact]
-    public void DoNullArrayClone()
+    public void DoNullArrayClone_Nullable()
     {
         // Uses the Clone method on a class a null-valued array property
         var enumerableClone = new ArrayClone()
@@ -321,4 +321,16 @@ public class Tests
         deepClone.CloneSafe();
     }
 
+    [Fact]
+    public void DoesntThrowOnNullable_NonNullableType_AllowAlways()
+    {
+        var deepClone = new DeepClone_NullAllowAlways()
+        {
+            A = "test",
+            Simple = null
+        };
+
+        deepClone.Clone();
+        deepClone.CloneSafe();
+    }
 }

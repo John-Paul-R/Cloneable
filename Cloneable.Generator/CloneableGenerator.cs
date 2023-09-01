@@ -26,6 +26,9 @@ public class CloneableGenerator : ISourceGenerator
     private INamedTypeSymbol? ignoreCloneAttribute;
     private INamedTypeSymbol? cloneAttribute;
 
+    // This'll be initialized per-Cloneable-attribute, is a context var
+    private NullableReferenceHandling _nullableReferenceHandling;
+
     public void Initialize(GeneratorInitializationContext context)
     {
         context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
@@ -53,8 +56,15 @@ public class CloneableGenerator : ISourceGenerator
 
             var attribute = attributes.Single();
             var isExplicit = (bool?)attribute.NamedArguments.FirstOrDefault(e => e.Key.Equals(ExplicitDeclarationKeyString)).Value.Value ?? false;
+            _nullableReferenceHandling = attribute.NamedArguments.FirstOrDefault(e => e.Key.Equals(nameof(CloneableAttribute.NullableReferenceHandling))).Value.Value
+                is {} val
+                    ? (NullableReferenceHandling)val
+                    : NullableReferenceHandling.CodeMatchesAnnotation;
             var hasDuplicateName = classSymbols.Any(x => !SymbolEqualityComparer.Default.Equals(x, classSymbol) && x.Name == classSymbol.Name); //Fix issue where two classes have the same name
-            context.AddSource($"{(hasDuplicateName ? $"{classSymbol.ContainingNamespace}." : null)}{classSymbol.Name}_cloneable.cs", SourceText.From(CreateCloneableCode(classSymbol, isExplicit), Encoding.UTF8));
+            var generatedCode = CreateCloneableCode(classSymbol, isExplicit);
+            context.AddSource(
+                $"{(hasDuplicateName ? $"{classSymbol.ContainingNamespace}." : null)}{classSymbol.Name}_cloneable.cs",
+                SourceText.From(generatedCode, Encoding.UTF8));
         }
     }
 
@@ -145,25 +155,31 @@ public class CloneableGenerator : ISourceGenerator
         {
             return $@"                {name} = {GenerateEnumerableConversionCode($"this.{name}", symbol.Type)}";
         }
-        if (isCloneable)
-        {
-            return $@"                {name} = this.{name}{(symbol.NullableAnnotation == NullableAnnotation.Annotated ? "?" : "")}.Clone";
+        if (isCloneable) {
+            bool considerNullable = symbol.NullableAnnotation == NullableAnnotation.Annotated ||
+                _nullableReferenceHandling == NullableReferenceHandling.AllowAlways;
+            return $@"                {name} = this.{name}{(considerNullable ? "?" : "")}.Clone";
         }
 
         return $@"                {name} = this.{name}";
+    }
+
+    private string NullCheck(string name, ITypeSymbol type, string generatedValueExpressionCode)
+    {
+        if (_nullableReferenceHandling == NullableReferenceHandling.AllowAlways && type.IsReferenceType // Implicitly nullable
+            || type.NullableAnnotation is NullableAnnotation.Annotated // Nullable<T>, or explicitly nullable reference type when NullableReferenceHandling.CodeMatchesAnnotation
+           ) {
+            return $@"{name} is null ? null : {generatedValueExpressionCode}";
+        }
+
+        return generatedValueExpressionCode;
     }
 
     private string GenerateEnumerableConversionCode(string name, ITypeSymbol type, int depth = 1)
     {
         var generatedCode = GenerateEnumerableConversionCodeWithoutNullCheck(name, type, depth);
 
-        if (type.IsReferenceType // Implicitly nullable
-            || type.NullableAnnotation is NullableAnnotation.Annotated // Nullable<T>
-           ) {
-            return $@"{name} is null ? null : {generatedCode}";
-        }
-
-        return generatedCode;
+        return NullCheck(name, type, generatedCode);
     }
 
     private string GenerateEnumerableConversionCodeWithoutNullCheck(string name, ITypeSymbol type, int depth = 1)

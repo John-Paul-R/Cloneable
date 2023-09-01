@@ -282,6 +282,20 @@ public class Tests
     }
 
     [Fact]
+    public void DoNullArrayClone()
+    {
+        // Uses the Clone method on a class a null-valued array property
+        var enumerableClone = new ArrayClone()
+        {
+            A = "child",
+            B = null,
+        };
+        var clone = enumerableClone.CloneSafe();
+        clone.Should().NotBe(enumerableClone);
+        clone.B.Should().BeNull();
+    }
+
+    [Fact]
     public void ThrowsOnNonNullable()
     {
         var deepClone = new DeepClone()

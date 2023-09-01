@@ -217,6 +217,19 @@ namespace {{CloneableNamespace}}
 
     private string GenerateEnumerableConversionCode(string name, ITypeSymbol type, int depth = 1)
     {
+        var generatedCode = GenerateEnumerableConversionCodeWithoutNullCheck(name, type, depth);
+
+        if (type.IsReferenceType // Implicitly nullable
+            || type.NullableAnnotation is NullableAnnotation.Annotated // Nullable<T>
+           ) {
+            return $@"{name} is null ? null : {generatedCode}";
+        }
+
+        return generatedCode;
+    }
+
+    private string GenerateEnumerableConversionCodeWithoutNullCheck(string name, ITypeSymbol type, int depth = 1)
+    {
         var arguments = type.GetIDictionaryTypeArguments() ?? type.GetIEnumerableTypeArguments();
         if (arguments == null) return name;
         var argumentName = new string('x', depth);

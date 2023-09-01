@@ -55,8 +55,11 @@ internal static class SymbolExtensions
 
     public static ImmutableArray<ITypeSymbol>? GetIEnumerableTypeArguments(this ITypeSymbol symbol)
     {
-        if (symbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::System.Collections.Generic.IEnumerable<T>") 
+        if (symbol.OriginalDefinition.TypeKind == TypeKind.Interface &&
+            symbol.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::System.Collections.Generic.IEnumerable<T>")
+        {
             return ((INamedTypeSymbol)symbol).TypeArguments;
+        }
         return symbol.GetInterface("global::System.Collections.Generic.IEnumerable<T>")?.TypeArguments;
     }
 

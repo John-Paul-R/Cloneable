@@ -227,14 +227,14 @@ namespace {{CloneableNamespace}}
         var typeAsEnumerable = $"global::System.Collections.Generic.IEnumerable<{arguments.Value.ElementAtOrDefault(0)?.ToFQF()}>";
         var argumentsAsKeyValuePair = $"global::System.Collections.Generic.KeyValuePair<{arguments.Value.ElementAtOrDefault(0)?.ToFQF()}, {arguments.Value.ElementAtOrDefault(1)?.ToFQF()}>";
         var typeAsKeyValuePair = $"global::System.Collections.Generic.IEnumerable<{argumentsAsKeyValuePair}>";
-        var isConstructableWithSelf = ((INamedTypeSymbol)type).Constructors.Any(constructors =>
-            constructors.Parameters.Any(param => param.Type.ToFQF() == type.ToKnownInterfaceFQF())
+        var isConstructableWithSelf = ((INamedTypeSymbol)type).Constructors.Any(constructor =>
+            constructor.Parameters.Any(param => param.Type.ToFQF() == type.ToKnownInterfaceFQF())
         );
-        var isConstructableWithEnumerable = ((INamedTypeSymbol)type).Constructors.Any(constructors =>
-            constructors.Parameters.Any(param => param.Type.ToFQF() == typeAsEnumerable)
+        var isConstructableWithEnumerable = ((INamedTypeSymbol)type).Constructors.Any(constructor =>
+            constructor.Parameters.Any(param => param.Type.ToFQF() == typeAsEnumerable)
         );
-        var isConstructableWithKeyValuePair = ((INamedTypeSymbol)type).Constructors.Any(constructors =>
-            constructors.Parameters.Any(param => param.Type.ToFQF() == typeAsKeyValuePair)
+        var isConstructableWithKeyValuePair = ((INamedTypeSymbol)type).Constructors.Any(constructor =>
+            constructor.Parameters.Any(param => param.Type.ToFQF() == typeAsKeyValuePair)
         );
         if (arguments.Value.Any(x => !x.IsValueType))
         {

@@ -104,10 +104,13 @@ public class CloneableGenerator : ISourceGenerator
      {{GetAccessModifier(classSymbol)}} partial class {{classSymbol.Name}}
      {
          /// <summary>
-         /// Creates a copy of {{classSymbol.Name}} with NO circular reference checking. This method should be used if performance matters.
+         /// Creates a copy of {{classSymbol.Name}} with NO circular reference checking. This method should be used if
+         /// performance matters.
          ///
-         /// <exception cref="StackOverflowException">Will occur on any object that has circular references in the hierarchy.</exception>
          /// </summary>
+         /// <exception cref="StackOverflowException">
+         /// Will occur on any object that has circular references in the hierarchy.
+         /// </exception>
          public {{classSymbol.ToFQF()}} Clone()
          {
              return new {{classSymbol.ToFQF()}}
@@ -117,9 +120,12 @@ public class CloneableGenerator : ISourceGenerator
          }
  
          /// <summary>
-         /// Creates a copy of {{classSymbol.Name}} with circular reference checking. If a circular reference was detected, only a reference of the leaf object is passed instead of cloning it.
+         /// Creates a copy of {{classSymbol.Name}} with circular reference checking. If a circular reference was
+         /// detected, only a reference of the leaf object is passed instead of cloning it.
          /// </summary>
-         /// <param name="referenceChain">Should only be provided if specific objects should not be cloned but passed by reference instead.</param>
+         /// <param name="referenceChain">
+         /// Should only be provided if specific objects should not be cloned but passed by reference instead.
+         ///</param>
          public {{classSymbol.ToFQF()}} CloneSafe(Stack<object> referenceChain = null)
          {
              if(referenceChain?.Contains(this) == true)

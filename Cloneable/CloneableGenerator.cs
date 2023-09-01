@@ -20,51 +20,57 @@ public class CloneableGenerator : ISourceGenerator
     private const string CloneAttributeString = "CloneAttribute";
     private const string IgnoreCloneAttributeString = "IgnoreCloneAttribute";
 
-    private const string cloneableAttributeText = @"using System;
+    private const string cloneableAttributeText = $$"""
+using System;
 
-namespace " + CloneableNamespace + @"
+namespace {{CloneableNamespace}}
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
-    public sealed class " + CloneableAttributeString + @" : Attribute
+    public sealed class {{CloneableAttributeString}} : Attribute
     {
-        public " + CloneableAttributeString + @"()
+        public {{CloneableAttributeString}}()
         {
         }
 
-        public bool " + ExplicitDeclarationKeyString + @" { get; set; }
+        public bool {{ExplicitDeclarationKeyString}} { get; set; }
     }
 }
-";
 
-    private const string clonePropertyAttributeText = @"using System;
+""";
 
-namespace " + CloneableNamespace + @"
+    private const string clonePropertyAttributeText = $$"""
+using System;
+
+namespace {{CloneableNamespace}}
 {
     [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
-    public sealed class " + CloneAttributeString + @" : Attribute
+    public sealed class {{CloneAttributeString}} : Attribute
     {
-        public " + CloneAttributeString + @"()
+        public {{CloneAttributeString}}()
         {
         }
 
-        public bool " + PreventDeepCopyKeyString + @" { get; set; }
+        public bool {{PreventDeepCopyKeyString}} { get; set; }
     }
 }
-";
 
-    private const string ignoreClonePropertyAttributeText = @"using System;
+""";
 
-namespace " + CloneableNamespace + @"
+    private const string ignoreClonePropertyAttributeText = $$"""
+using System;
+
+namespace {{CloneableNamespace}}
 {
-    [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
-    public sealed class " + IgnoreCloneAttributeString + @" : Attribute
-    {
-        public " + IgnoreCloneAttributeString + @"()
-        {
-        }
-    }
+  [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
+  public sealed class {{IgnoreCloneAttributeString}} : Attribute
+  {
+      public {{IgnoreCloneAttributeString}}()
+      {
+      }
+  }
 }
-";
+
+""";
 
     //TODO: Add CustomCloneAttribute?
     private INamedTypeSymbol? cloneableAttribute;
@@ -130,7 +136,7 @@ namespace " + CloneableNamespace + @"
             if (x.isEnumerable)
                 return x.line.Replace("#CLONE#", "CloneSafe(referenceChain)");
             if (x.isCloneable)
-                return x.line + "Safe(referenceChain)";
+                return $"{x.line}Safe(referenceChain)";
             return x.line;
         });
         var fieldAssignmentsCodeFast = fieldAssignmentsCode.Select(x =>
@@ -138,48 +144,50 @@ namespace " + CloneableNamespace + @"
             if (x.isEnumerable)
                 return x.line.Replace("#CLONE#", "Clone()");
             if (x.isCloneable)
-                return x.line + "()";
+                return $"{x.line}()";
             return x.line;
         });
 
-        return $@"using System.Collections.Generic;
-using System.Linq;
-namespace {namespaceName}
-{{
-    {GetAccessModifier(classSymbol)} partial class {classSymbol.Name}
-    {{
-        /// <summary>
-        /// Creates a copy of {classSymbol.Name} with NO circular reference checking. This method should be used if performance matters.
-        /// 
-        /// <exception cref=""StackOverflowException"">Will occur on any object that has circular references in the hierarchy.</exception>
-        /// </summary>
-        public {classSymbol.ToFQF()} Clone()
-        {{
-            return new {classSymbol.ToFQF()}
-            {{
-{string.Join($",{Environment.NewLine}", fieldAssignmentsCodeFast)}
-            }};
-        }}
-
-        /// <summary>
-        /// Creates a copy of {classSymbol.Name} with circular reference checking. If a circular reference was detected, only a reference of the leaf object is passed instead of cloning it.
-        /// </summary>
-        /// <param name=""referenceChain"">Should only be provided if specific objects should not be cloned but passed by reference instead.</param>
-        public {classSymbol.ToFQF()} CloneSafe(Stack<object> referenceChain = null)
-        {{
-            if(referenceChain?.Contains(this) == true) 
-                return this;
-            referenceChain ??= new Stack<object>();
-            referenceChain.Push(this);
-            var result = new {classSymbol.ToFQF()}
-            {{
-{string.Join($",{Environment.NewLine}", fieldAssignmentsCodeSafe)}
-            }};
-            referenceChain.Pop();
-            return result;
-        }}
-    }}
-}}";
+        return $$"""
+ using System.Collections.Generic;
+ using System.Linq;
+ namespace {{namespaceName}}
+ {
+     {{GetAccessModifier(classSymbol)}} partial class {{classSymbol.Name}}
+     {
+         /// <summary>
+         /// Creates a copy of {{classSymbol.Name}} with NO circular reference checking. This method should be used if performance matters.
+         ///
+         /// <exception cref="StackOverflowException">Will occur on any object that has circular references in the hierarchy.</exception>
+         /// </summary>
+         public {{classSymbol.ToFQF()}} Clone()
+         {
+             return new {{classSymbol.ToFQF()}}
+             {
+ {{string.Join($",{Environment.NewLine}", fieldAssignmentsCodeFast)}}
+             };
+         }
+ 
+         /// <summary>
+         /// Creates a copy of {{classSymbol.Name}} with circular reference checking. If a circular reference was detected, only a reference of the leaf object is passed instead of cloning it.
+         /// </summary>
+         /// <param name="referenceChain">Should only be provided if specific objects should not be cloned but passed by reference instead.</param>
+         public {{classSymbol.ToFQF()}} CloneSafe(Stack<object> referenceChain = null)
+         {
+             if(referenceChain?.Contains(this) == true)
+                 return this;
+             referenceChain ??= new Stack<object>();
+             referenceChain.Push(this);
+             var result = new {{classSymbol.ToFQF()}}
+             {
+ {{string.Join($",{Environment.NewLine}", fieldAssignmentsCodeSafe)}}
+             };
+             referenceChain.Pop();
+             return result;
+         }
+     }
+ }
+ """;
     }
 
     private IEnumerable<(string line, bool isCloneable, bool isEnumerable)> GenerateFieldAssignmentsCode(INamedTypeSymbol classSymbol, bool isExplicit )

@@ -309,7 +309,7 @@ namespace {{CloneableNamespace}}
         return (item: x, !preventDeepCopy, false);
     }
 
-    private string GetAccessModifier(INamedTypeSymbol classSymbol)
+    private static string GetAccessModifier(INamedTypeSymbol classSymbol)
     {
         return classSymbol.DeclaredAccessibility.ToString().ToLowerInvariant();
     }

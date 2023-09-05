@@ -126,7 +126,7 @@ public class CloneableGenerator : ISourceGenerator
          /// <param name="referenceChain">
          /// Should only be provided if specific objects should not be cloned but passed by reference instead.
          ///</param>
-         public {{classSymbol.ToFQF()}} CloneSafe(Stack<object> referenceChain = null)
+         public {{classSymbol.ToFQF()}} CloneSafe(Stack<object>? referenceChain = null)
          {
              if(referenceChain?.Contains(this) == true)
                  return this;
